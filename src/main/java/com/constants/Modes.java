@@ -1,8 +1,7 @@
-package main.java.com.constants;
+package com.constants;
 
 public enum Modes {
     NUMERIC,
     ALPHANUMERIC,
-    BYTE,
-    KANJI
+    BYTE
 }

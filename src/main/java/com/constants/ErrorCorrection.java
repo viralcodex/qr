@@ -1,4 +1,4 @@
-package main.java.com.constants;
+package com.constants;
 
 public enum ErrorCorrection {
     L, // Low

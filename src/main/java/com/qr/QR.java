@@ -1,8 +1,8 @@
 package com.qr;
 
 import java.util.Scanner;
-import main.java.com.qr.utils.QRUtils;
-import main.java.com.constants.ErrorCorrection;
+import com.qr.utils.QRUtils;
+import com.constants.ErrorCorrection;
 
 public class QR {
     public static void main(String[] args) {
