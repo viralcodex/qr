@@ -1,7 +1,6 @@
 package com.qr;
 
 import java.util.Scanner;
-import com.qr.utils.QRUtils;
 import com.constants.ErrorCorrection;
 
 public class QR {
@@ -26,14 +25,14 @@ public class QR {
                     ec = ErrorCorrection.M;
                 }
                 
-                String qrCode = QRUtils.encode(input, ec);
+                String qrCode = QREncoder.encode(input, ec);
                 System.out.println("Encoded QR Code: " + qrCode);
                 break;
                 
             case "decode":
                 System.out.println("Enter the QR code to decode:");
                 String qrInput = scanner.nextLine();
-                String decodedString = QRUtils.decode(qrInput);
+                String decodedString = QRDecoder.decode(qrInput);
                 System.out.println("Decoded String: " + decodedString);
                 break;
                 

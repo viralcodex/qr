@@ -42,4 +42,20 @@ public class Constants {
             {  230,   180,   130,    98 },  // V9
             {  271,   213,   151,   119 },  // V10
     };
+
+    // Total number of data codewords per version and EC level
+    // columns: [L, M, Q, H]
+    // Multiply by 8 to get total bits
+    public static final int[][] DATA_CODEWORDS = {
+            {   19,    16,    13,     9 },  // V1
+            {   34,    28,    22,    16 },  // V2
+            {   55,    44,    34,    26 },  // V3
+            {   80,    64,    48,    36 },  // V4
+            {  108,    86,    62,    46 },  // V5
+            {  136,   108,    76,    60 },  // V6
+            {  156,   124,    88,    66 },  // V7
+            {  194,   154,   110,    86 },  // V8
+            {  232,   182,   132,   100 },  // V9
+            {  274,   216,   154,   122 },  // V10
+    };
 }

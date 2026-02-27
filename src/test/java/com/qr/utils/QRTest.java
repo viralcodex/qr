@@ -4,7 +4,7 @@ import com.constants.ErrorCorrection;
 import com.constants.Modes;
 import org.junit.jupiter.api.Test;
 
-import static com.qr.utils.QRCapacity.getVersion;
+import static com.qr.utils.QRUtils.getVersion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class QRTest {
