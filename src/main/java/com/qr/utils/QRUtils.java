@@ -1,39 +1,52 @@
 package com.qr.utils;
 
+import com.constants.Constants;
 import com.constants.ErrorCorrection;
 import com.constants.Modes;
-import com.qr.utils.QRCapacity;
-
-import static com.qr.utils.QRCapacity.getVersion;
 
 public class QRUtils {
 
-    public static String encode(String input, ErrorCorrection errorCorrectionLevel) {
-        Modes mode = getEncodingMode(input);
-        int version = getVersion(input.length(), errorCorrectionLevel, mode);
-
-        System.out.println("Version: " + version);
-        return "Encoded(" + input + ")";
-    }
-
-    public static String decode(String qrCode) {
-        // Placeholder for decoding logic
-        return "Decoded(" + qrCode + ")";
-    }
-
-    private static Modes getEncodingMode(String input) {
-        if(input.matches("[0-9]+"))
+    public static int getVersion(int dataLength, ErrorCorrection errorCorrection, Modes mode)
+    {
+        int[][] table = switch (mode)
         {
+            case NUMERIC -> Constants.NUMERIC;
+            case ALPHANUMERIC -> Constants.ALPHANUMERIC;
+            case BYTE -> Constants.BYTE;
+        };
+
+        int errorIndex = errorCorrection.ordinal(); //index of the enum value
+
+        for(int version = 0; version < table.length; version++)
+        {
+            if(dataLength <= table[version][errorIndex])
+            {
+                return version + 1;
+            }
+        }
+        return -1;
+    }
+
+    public static Modes getEncodingMode(String input) {
+        if (input.matches("[0-9]+")) {
             return Modes.NUMERIC;
-        }
-        else if(input.matches("[A-Z0-9 $%*+\\-./:]+"))
-        {
+        } else if (input.matches("[A-Z0-9 $%*+\\-./:]+")) {
             return Modes.ALPHANUMERIC;
-        }
-        //kanji mode will be implemented later
-        else
-        {
+        } else {
             return Modes.BYTE;
         }
+    }
+
+    public static String getIndicatorCodes(int inputLength, Modes mode, int version) {
+        // Mode indicator (4 bits)
+        String modeIndicator = String.format("%4s", Integer.toBinaryString(mode.getIndicator()))
+                .replace(' ', '0');
+
+        // Character count indicator (variable bits based on version and mode)
+        int charCountBits = mode.getCharCountBits(version);
+        String lengthIndicator = String.format("%" + charCountBits + "s", Integer.toBinaryString(inputLength))
+                .replace(' ', '0');
+
+        return modeIndicator + lengthIndicator;
     }
 }
