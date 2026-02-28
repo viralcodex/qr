@@ -10,8 +10,19 @@ import static com.qr.utils.QRUtils.getEncodingMode;
 import static com.qr.utils.QRUtils.getIndicatorCodes;
 import static com.qr.utils.QRUtils.getVersion;
 
-public class QREncoder {
+// TODO: Implement encoding steps:
+// 1. Add mode indicator (4 bits) (done)
+// 2. Add character count indicator (done)
+// 3. Encode data based on mode (done)
+// 4. Add terminator and padding (done)
+// 5. Generate error correction codewords
+// 6. Structure final message
+// 7. Place modules in matrix
+// 8. Apply masking
+// 9. Add format and version info
 
+public class QREncoder
+{
     public static String encode(String input, ErrorCorrection errorCorrectionLevel) {
         int inputLength = input.length();
 
@@ -29,6 +40,15 @@ public class QREncoder {
         String indicators = getIndicatorCodes(inputLength, mode, version);
         String encodedString = encodeBasedOnMode(input, mode);
 
+        //padding the end as the QR spec mentions
+        String paddedEncodedString = getPaddedEncodedString(version, errorCorrectionLevel, encodedString, indicators);
+
+        //Error Correction Coding
+        String errorCorrectionEncodedString = getErrorCorrectionCodedString(paddedEncodedString);
+        return "Encoded(" + input + ")";
+    }
+
+    private static String getPaddedEncodedString(int version, ErrorCorrection errorCorrectionLevel, String encodedString, String indicators) {
         int totalBitsAllowed = Constants.DATA_CODEWORDS[version - 1][errorCorrectionLevel.ordinal()] * 8; //bits = bytes * 8
 
         StringBuilder sb = new StringBuilder();
@@ -47,19 +67,13 @@ public class QREncoder {
             sb.append(useFirst ? "11101100" : "00010001"); // 236 and 17 (bitwise complement)
             useFirst = !useFirst;
         }
+        return sb.toString();
+    }
 
-        // TODO: Implement encoding steps:
-        // 1. Add mode indicator (4 bits) (done)
-        // 2. Add character count indicator (done)
-        // 3. Encode data based on mode (done)
-        // 4. Add terminator and padding (done)
-        // 5. Generate error correction codewords
-        // 6. Structure final message
-        // 7. Place modules in matrix
-        // 8. Apply masking
-        // 9. Add format and version info
+    private static String getErrorCorrectionCodedString(String paddedEncodedString)
+    {
 
-        return "Encoded(" + input + ")";
+        return "";
     }
 
     private static String encodeBasedOnMode(String input, Modes mode) {
