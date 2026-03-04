@@ -3,9 +3,16 @@ package com.qr;
 import com.constants.Constants;
 import com.constants.ErrorCorrection;
 import com.constants.Modes;
+import com.qr.utils.GaloisField;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.constants.Constants.EC_CODEWORDS_PER_BLOCK;
+import static com.constants.Constants.GF_EXP;
+import static com.constants.Constants.GROUP1_BLOCKS;
+import static com.constants.Constants.GROUP1_DATA_CODEWORDS;
+import static com.constants.Constants.GROUP2_BLOCKS;
+import static com.constants.Constants.GROUP2_DATA_CODEWORDS;
 import static com.qr.utils.QRUtils.getEncodingMode;
 import static com.qr.utils.QRUtils.getIndicatorCodes;
 import static com.qr.utils.QRUtils.getVersion;
@@ -22,7 +29,11 @@ import static com.qr.utils.QRUtils.getVersion;
 // 9. Add format and version info
 
 public class QREncoder
-{
+{   
+    static {
+        GaloisField.initGaloisTables();
+    }
+
     public static String encode(String input, ErrorCorrection errorCorrectionLevel) {
         int inputLength = input.length();
 
@@ -44,7 +55,8 @@ public class QREncoder
         String paddedEncodedString = getPaddedEncodedString(version, errorCorrectionLevel, encodedString, indicators);
 
         //Error Correction Coding
-        String errorCorrectionEncodedString = getErrorCorrectionCodedString(paddedEncodedString);
+        String errorCorrectionEncodedString = getErrorCorrectionCodedString(version, errorCorrectionLevel, paddedEncodedString);
+
         return "Encoded(" + input + ")";
     }
 
@@ -70,10 +82,102 @@ public class QREncoder
         return sb.toString();
     }
 
-    private static String getErrorCorrectionCodedString(String paddedEncodedString)
-    {
+    private static String getErrorCorrectionCodedString(int version, ErrorCorrection errorCorrectionLevel, String paddedEncodedString)
+    {  
+        int[] ecBlockInfo = getECBlockInfo(version, errorCorrectionLevel.ordinal());
 
+        //split the paddedEncodedString into data codewords based on the block info
+
+        int[][] dataBlocks = getDataBlocks(paddedEncodedString, ecBlockInfo);
+        
+        int[] generatorPolynomial = getGeneratorPolynomial(ecBlockInfo[0]);
+        
+        int[][] errorCorrectionCodewords = new int[dataBlocks.length][];
+        for(int i = 0; i < dataBlocks.length; i++)
+        {
+            errorCorrectionCodewords[i] = getErrorCorrectionCodewords(dataBlocks[i], generatorPolynomial, ecBlockInfo[0]);
+        }
+
+        
         return "";
+    }
+
+    private static int[] getECBlockInfo(int version, int ecLevel) {
+        int idx = version - 1;
+        return new int[] {
+                EC_CODEWORDS_PER_BLOCK[idx][ecLevel],
+                GROUP1_BLOCKS[idx][ecLevel],
+                GROUP1_DATA_CODEWORDS[idx][ecLevel],
+                GROUP2_BLOCKS[idx][ecLevel],
+                GROUP2_DATA_CODEWORDS[idx][ecLevel]
+        };
+    }
+
+    private static int[][] getDataBlocks(String paddedEncodedString, int[] ecBlockInfo) {
+        int group1Blocks = ecBlockInfo[1];
+        int group1DataCodewords = ecBlockInfo[2];
+        int group2Blocks = ecBlockInfo[3];
+        int group2DataCodewords = ecBlockInfo[4];
+
+        int[][] dataBlocks = new int[group1Blocks + group2Blocks][];
+        int bitOffset = 0;
+        for(int i = 0; i < group1Blocks; i++)
+        {
+            dataBlocks[i] = new int[group1DataCodewords];
+            for(int j = 0; j < group1DataCodewords; j++)
+            {
+                dataBlocks[i][j] = Integer.parseInt(paddedEncodedString.substring(bitOffset, bitOffset + 8), 2);
+                bitOffset += 8;
+            }
+        }
+
+        for(int i = 0; i < group2Blocks; i++)
+        {
+            dataBlocks[group1Blocks + i] = new int[group2DataCodewords];
+        
+            for(int j = 0; j < group2DataCodewords; j++)
+            {
+                dataBlocks[group1Blocks + i][j] = Integer.parseInt(paddedEncodedString.substring(bitOffset, bitOffset + 8), 2);
+                bitOffset += 8;
+            }
+        }
+
+        if(bitOffset != paddedEncodedString.length())
+        {
+            throw new IllegalStateException("Bit offset does not match padded encoded string length");
+        }
+
+        return dataBlocks;
+    }
+
+    private static int[] getGeneratorPolynomial(int degree)
+    {
+        int[] generatorPolynomial = {1}; // start with the polynomial "1"
+
+
+        for(int i = 0; i < degree; i++)
+        {
+            int[] term = {1, GF_EXP[i]}; // (x - α^i) => 1*x^1 + GF_EXP[i]*x^0
+            generatorPolynomial = polynomialMultiply(generatorPolynomial, term); // multiply the current generator polynomial by the new term to get the updated generator polynomial
+        }
+
+        return generatorPolynomial;
+    }
+
+    private static int[] polynomialMultiply(int[] poly1, int[] poly2)
+    {
+        int[] result = new int[poly1.length + poly2.length - 1];
+
+        for(int i = 0; i < poly1.length; i++)
+        {
+            for (int j = 0; j < poly2.length; j++)
+            {
+                int product = GaloisField.gfMultiply(poly1[i], poly2[j]);
+                result[i + j] = GaloisField.gfAdd(result[i + j], product);
+            }
+        }
+
+        return result;
     }
 
     private static String encodeBasedOnMode(String input, Modes mode) {
@@ -84,6 +188,41 @@ public class QREncoder
         };
     }
 
+    /** the process is we take 
+     * 1. the data codewords for a block (from the padded encoded string)
+     * 2. treat that as the coefficients of a message polynomial
+     * 3. divide that message polynomial by the generator polynomial using polynomial long division in GF(256)
+     * 4. the remainder from that division is the error correction codewords for that block
+     * 5. repeat for each block
+     */
+    private static int[] getErrorCorrectionCodewords(int[] dataBlocks, int[] generatorPolynomial, int ecCodewordsPerBlock)
+    {
+        int dataLength = dataBlocks.length;
+        int[] workingPolynomial = new int[dataLength + ecCodewordsPerBlock]; // the message polynomial [data block codewords + error correction codewords]
+        
+        System.arraycopy(dataBlocks, 0, workingPolynomial, 0, dataBlocks.length);
+
+        for(int i = 0; i < dataLength; i++)
+        {
+            int leadTerm = workingPolynomial[i]; // the term we want to eliminate (make 0)
+            if(leadTerm != 0)
+            {
+                // multiply the generator polynomial by the lead term and subtract (XOR) from the working polynomial
+                for(int j = 0; j < generatorPolynomial.length; j++)
+                {
+                    int product = GaloisField.gfMultiply(leadTerm, generatorPolynomial[j]);
+                    workingPolynomial[i + j] = GaloisField.gfAdd(workingPolynomial[i + j], product); // XOR for subtraction in GF(256)
+                }
+            }
+        }
+
+        int[] errorCorrectionCodewords = new int[ecCodewordsPerBlock];
+
+        // the last ecCodewordsPerBlock terms of the working polynomial are the error correction codewords after the division process
+        System.arraycopy(workingPolynomial, dataLength, errorCorrectionCodewords, 0, ecCodewordsPerBlock);
+
+        return errorCorrectionCodewords;
+    }
     private static String encodeNumeric(String input) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < input.length(); i += 3) {
