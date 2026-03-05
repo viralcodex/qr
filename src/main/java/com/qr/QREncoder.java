@@ -57,7 +57,9 @@ public class QREncoder
         //Error Correction Coding
         String errorCorrectionEncodedString = getErrorCorrectionCodedString(version, errorCorrectionLevel, paddedEncodedString);
 
-        return "Encoded(" + input + ")";
+        String finalEncodedString = errorCorrectionEncodedString + "0".repeat(getRemainderBits(version)); // add remainder bits if needed
+        
+        return finalEncodedString;
     }
 
     private static String getPaddedEncodedString(int version, ErrorCorrection errorCorrectionLevel, String encodedString, String indicators) {
@@ -93,13 +95,57 @@ public class QREncoder
         int[] generatorPolynomial = getGeneratorPolynomial(ecBlockInfo[0]);
         
         int[][] errorCorrectionCodewords = new int[dataBlocks.length][];
+
         for(int i = 0; i < dataBlocks.length; i++)
         {
             errorCorrectionCodewords[i] = getErrorCorrectionCodewords(dataBlocks[i], generatorPolynomial, ecBlockInfo[0]);
         }
 
+        //interleave data codewords and error correction codewords according to the QR spec and return as a string of bits
         
-        return "";
+        StringBuilder sb = new StringBuilder();
+        int maxDataCodewords = Math.max(ecBlockInfo[2], ecBlockInfo[4]);
+        
+        /**
+         * we know the number of data codewords in each block from the block info, 
+         * so we loop through the data blocks and take the codewords at the same index (if it exists) and append to the final string. 
+         * We do this for all indices up to the maximum number of data codewords in any block. 
+         * This way we are interleaving the codewords from each block together. 
+         * After interleaving all the data codewords, we then interleave the error correction codewords in the same way.
+        */
+        for(int col = 0; col< maxDataCodewords; col++)
+        {
+            for(int block = 0; block < dataBlocks.length; block++)
+            {
+                if(col < dataBlocks[block].length)
+                {
+                    sb.append(String.format("%8s", Integer.toBinaryString(dataBlocks[block][col] & 0xFF)).replace(' ', '0'));
+                }
+            }
+        }
+       
+        
+        for(int col = 0; col < ecBlockInfo[0]; col++)
+        {
+            for(int block = 0; block < errorCorrectionCodewords.length; block++)
+            {
+                if(col < errorCorrectionCodewords[block].length)
+                {
+                    sb.append(String.format("%8s", Integer.toBinaryString(errorCorrectionCodewords[block][col] & 0xFF)).replace(' ', '0'));
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private static int getRemainderBits(int version) {
+        return switch (version) {
+            case 2, 3, 4, 5, 6 -> 7;
+            case 14, 15, 16, 17, 18, 19, 20, 28, 29, 30, 31, 32, 33, 34 -> 3;
+            case 21, 22, 23, 24, 25, 26, 27 -> 4;
+            default -> 0; // 1, 7-13, 35-40
+        };
     }
 
     private static int[] getECBlockInfo(int version, int ecLevel) {
