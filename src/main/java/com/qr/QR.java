@@ -25,7 +25,7 @@ public class QR {
                     ec = ErrorCorrection.M;
                 }
                 
-                String qrCode = QREncoder.encode(input, ec);
+                int[][] qrCode = QRGenerator.generate(input, ec);
                 System.out.println("Encoded QR Code: " + qrCode);
                 break;
                 
