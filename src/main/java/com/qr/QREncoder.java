@@ -45,10 +45,7 @@ public class QREncoder {
         String errorCorrectionEncodedString = getErrorCorrectionCodedString(version, errorCorrectionLevel,
                 paddedEncodedString);
 
-        String finalEncodeString = errorCorrectionEncodedString + "0".repeat(getRemainderBits(version)); // add
-                                                                                                         // remainder
-                                                                                                         // bits if
-                                                                                                         // needed
+        String finalEncodeString = errorCorrectionEncodedString + "0".repeat(getRemainderBits(version)); // add remainder bits if needed
 
         return new String[] { finalEncodeString, String.valueOf(version), mode.name() };
     }
