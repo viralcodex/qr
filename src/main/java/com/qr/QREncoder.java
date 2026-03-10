@@ -32,9 +32,6 @@ public class QREncoder {
             throw new IllegalArgumentException("Data too long for QR code");
         }
 
-        System.out.println("Mode: " + mode);
-        System.out.println("Version: " + version);
-
         String indicators = getIndicatorCodes(inputLength, mode, version);
         String encodedString = encodeBasedOnMode(input, mode);
 
