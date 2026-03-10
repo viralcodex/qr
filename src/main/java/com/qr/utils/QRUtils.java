@@ -6,21 +6,17 @@ import com.constants.Modes;
 
 public class QRUtils {
 
-    public static int getVersion(int dataLength, ErrorCorrection errorCorrection, Modes mode)
-    {
-        int[][] table = switch (mode)
-        {
+    public static int getVersion(int dataLength, ErrorCorrection errorCorrection, Modes mode) {
+        int[][] table = switch (mode) {
             case NUMERIC -> Constants.NUMERIC;
             case ALPHANUMERIC -> Constants.ALPHANUMERIC;
             case BYTE -> Constants.BYTE;
         };
 
-        int errorIndex = errorCorrection.ordinal(); //index of the enum value
+        int errorIndex = errorCorrection.ordinal(); // index of the enum value
 
-        for(int version = 0; version < table.length; version++)
-        {
-            if(dataLength <= table[version][errorIndex])
-            {
+        for (int version = 0; version < table.length; version++) {
+            if (dataLength <= table[version][errorIndex]) {
                 return version + 1;
             }
         }
@@ -48,5 +44,31 @@ public class QRUtils {
                 .replace(' ', '0');
 
         return modeIndicator + lengthIndicator;
+    }
+
+    public static void printQR(int[][] qrCode) {
+        String WHITE_BG = "\u001B[47m";
+        String BLACK_BG = "\u001B[40m";
+        String RESET = "\u001B[0m";
+
+        for (int i = -4; i < qrCode.length + 4; i++) {
+            for (int j = -4; j < qrCode[0].length + 4; j++) {
+                if (!isValid(i, j, qrCode.length - 1, qrCode[0].length - 1)) {
+                    System.out.print(WHITE_BG + "  " + RESET);
+                } else {
+                    if (qrCode[i][j] == 0) {
+                        System.out.print(WHITE_BG + "  " + RESET);
+                    } else {
+                        System.out.print(BLACK_BG + "  " + RESET);
+                    }
+                }
+            }
+            System.out.println();
+        }
+    }
+
+    private static boolean isValid(int row, int col, int n, int m)
+    {
+        return row >= 0 && row <= n && col >= 0 && col <= m;
     }
 }
