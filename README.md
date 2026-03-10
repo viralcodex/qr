@@ -1,11 +1,10 @@
-# QR Code Encoder/Decoder
+# QR Code Encoder
 
-A QR code encoder and decoder built from scratch in Java without external libraries.
+A QR code encoder built from scratch in Java without external libraries.
 
 ## Features
 
 - **Encode** text strings into QR codes
-- **Decode** QR codes back to text
 - Multiple **encoding modes**:
   - Numeric (0-9)
   - Alphanumeric (A-Z, 0-9, and special characters)
@@ -51,19 +50,6 @@ src/main/java/com/
     ├── Constants.java    # Alphanumeric character set
     ├── ErrorCorrection.java  # Error correction levels enum
     └── Modes.java        # Encoding modes enum
-```
-
-## Usage Example
-
-```
-QR Code Encoder/Decoder
-Enter 'encode' to encode a string or 'decode' to decode a QR code:
-encode
-Enter the string to encode:
-HELLO WORLD
-Choose the error correction level (L, M, Q, H):
-M
-Encoded QR Code: Encoded(HELLO WORLD)
 ```
 
 ## License
