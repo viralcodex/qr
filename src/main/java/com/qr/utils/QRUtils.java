@@ -51,6 +51,7 @@ public class QRUtils {
         String BLACK_BG = "\u001B[40m";
         String RESET = "\u001B[0m";
 
+        //we need a 4 modules wide border around the QR code, so we print from -4 to length + 4
         for (int i = -4; i < qrCode.length + 4; i++) {
             for (int j = -4; j < qrCode[0].length + 4; j++) {
                 if (!isValid(i, j, qrCode.length - 1, qrCode[0].length - 1)) {
